@@ -147,3 +147,14 @@ TC-01, TC-03 and TC-06 are in `cypress/e2e/booking/`. All three passed **5 runs 
 | Cal.com **holds a time for a few minutes** after a guest picks it (`SelectedSlots`), so one test's pick hid 10:00 from the next test | The `db:clearBookings` task (run before each booking test) empties bookings **and** holds in the local test database. Host and event are kept |
 | This Mac's time zone is Kolkata, the same as the test guest's, so TC-03 couldn't tell the guest's *chosen* zone from the computer's | Every test script sets `TZ=UTC` (Chrome honours it; checked), so local runs match CI and TC-03 proves the chosen zone is used |
 | Cancelling through `POST /api/cancel` needs a different CSRF token than login | Not used; clearing the test database is simpler and leaves nothing behind |
+
+## 8. CI (2026-11-16)
+
+**Green run:** [run 43840662287](https://github.com/Abh004/cal-qa/actions/runs/43840662287) on `072db50`. Both jobs passed: API tests in about 1 minute (4 passed, API-05 pending), booking-flow tests in about 3 minutes (3 passed).
+
+| Finding | Decision |
+|---|---|
+| The first run's API job failed before any test ran: Cypress checks that `baseUrl` (localhost:3000) is up before running *any* spec, and that job starts no app | `CAL_BASE_URL=none` drops `baseUrl`; the API job and `npm run test:api` set it. Proven locally with the app stopped |
+| Starting Cal.diy v6.2.0 (amd64) on a GitHub runner, including the 1.6 GB image download, migrations and seed | About 1 min 20 s |
+| Username for the API tests | `CAL_API_USERNAME` repository secret (masked in logs), set from stdin |
+| Supply chain | Every action pinned to a commit SHA (version in a comment); workflow token is read-only |
