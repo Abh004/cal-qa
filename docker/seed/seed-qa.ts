@@ -50,7 +50,10 @@ async function main() {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { defaultScheduleId: schedule.id, timeZone: HOST.timeZone },
+      // DELIBERATE REGRESSION (demo/red-run branch only, never merged): the host's profile
+      // time zone is saved as London while their working hours stay on New York time.
+      // Guests can still book, but the host's dashboard shows every meeting at the wrong hour.
+      data: { defaultScheduleId: schedule.id, timeZone: "Europe/London" },
     });
 
     const eventType = await prisma.eventType.create({
