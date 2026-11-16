@@ -46,7 +46,7 @@ Without `CAL_API_USERNAME` they're skipped locally. Tests for already-reported b
 | `booking/tc01-booking-smoke.cy.ts` | **TC-01 (smoke):** book 10:00 on the next weekday; the confirmation shows the right event, date, time, time zone and guest | If this fails on your deployment, nothing else matters |
 | `booking/tc03-cross-timezone.cy.ts` | **TC-03 (regression):** a Kolkata guest books 10:00 New York, sees it in Kolkata time, and the host's list shows 10:00 for the same booking | Wrong-time meetings fail silently; upstream only tests this maths in isolation |
 | `booking/tc06-daylight-saving.cy.ts` | **TC-06 (edge case):** the same booking on either side of New York's next clock change shifts by an hour in Kolkata, while the host still sees 10:00 and working hours still start at 09:00 | Twice a year, getting this wrong moves every cross-zone meeting |
-| `api/slots-api.cy.ts` | **API-01 to API-05:** Cal.com's public slots API returns well-formed times, the same moments in other time zones, and clear errors | The endpoint behind every public booking page |
+| `api/slots-api.cy.ts` | **API-01 to API-06:** Cal.com's public slots API returns well-formed times, the same moments in other time zones, and clear errors. API-05 and API-06 cover known bugs and are skipped in normal runs | The endpoint behind every public booking page |
 
 Expected times are calculated in the tests with luxon, never typed in, so the tests stay correct in every season. Before each booking test, the local test database's bookings and time holds are emptied, so 10:00 is always free. All test scripts run Chrome in UTC (`TZ=UTC`), the same as CI.
 
@@ -61,3 +61,7 @@ The seed (`docker/seed/seed-qa.ts`) creates:
 | Event | "30 min meeting" at http://localhost:3000/qa-host/30min |
 
 The host's password is a test-only value in `cypress/support/test-data.ts`. It exists only in the local test instance.
+
+## Bugs found
+
+**[BUG-002 (S3 Medium)](docs/bugs/BUG-002-slots-duration-not-validated.md):** Cal.com's slots API rebuilds a fixed-length event's availability around any `duration` it's sent. For a 30-minute event, `duration=60` hides half the host's times and `duration=1440` hides all of them, both as a normal `200`. It reproduces on hosted cal.com and on self-hosted v6.2.0. The full list, including smaller issues, is in [docs/bugs](docs/bugs/README.md).

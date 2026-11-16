@@ -114,19 +114,50 @@ describe("Cal.com public slots API (GET /v2/slots)", () => {
     });
   });
 
+  /*
+   * Tests for known bugs (docs/bugs) are skipped in normal runs so the suite stays
+   * green; run with INCLUDE_KNOWN_BUGS=true to see them fail until they're fixed.
+   */
+  const knownBug = Cypress.expose("includeKnownBugs") ? it : it.skip;
+
   /**
    * Known bug BUG-001: when start is after end, the API answers 200 with no times
    * instead of rejecting the request, so a caller with a date mix-up sees
-   * "no availability" rather than an error. Skipped in normal runs so the suite
-   * stays green; run with INCLUDE_KNOWN_BUGS=true to see it fail until it's fixed.
+   * "no availability" rather than an error.
    */
-  const knownBug = Cypress.expose("includeKnownBugs") ? it : it.skip;
   knownBug("API-05 rejects a range whose start is after its end (known bug BUG-001)", () => {
     const range = weekdayRange();
     getSlots({ start: range.end, end: range.start }).then((res) => {
       expect(res.status, `HTTP status for start=${range.end} end=${range.start}`).to.eq(400);
       const body = expectShape(ApiError, res.body);
       expect(body.error.message, "message explains the range problem").to.match(/start|end/i);
+    });
+  });
+
+  /**
+   * Known bug BUG-002: the event has one fixed length, so `duration` mustn't change which
+   * times are offered. Today it does: twice the length hides every other time, and a
+   * day-long duration hides them all. Either fix is accepted: a 400 naming `duration`,
+   * or the same times as a request without it.
+   */
+  knownBug("API-06 doesn't change a fixed-length event's times when sent a different duration (known bug BUG-002)", () => {
+    const range = weekdayRange();
+    const { eventLengthMinutes } = apiConfig();
+
+    getSlots({ start: range.start, end: range.end }).then((baseRes) => {
+      const baseline = toInstants(expectShape(SlotsSuccess, baseRes.body).data).map((t) => t.toUTC().toISO());
+
+      [eventLengthMinutes * 2, 24 * 60].forEach((duration) => {
+        getSlots({ start: range.start, end: range.end, duration }).then((res) => {
+          if (res.status === 400) {
+            expect(expectShape(ApiError, res.body).error.message, "message names the field").to.match(/duration/);
+            return;
+          }
+          expect(res.status, `HTTP status for duration=${duration}`).to.eq(200);
+          const times = toInstants(expectShape(SlotsSuccess, res.body).data).map((t) => t.toUTC().toISO());
+          expect(times, `times for duration=${duration} (a ${eventLengthMinutes}-minute event)`).to.deep.eq(baseline);
+        });
+      });
     });
   });
 });

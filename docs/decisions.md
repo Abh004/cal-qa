@@ -73,7 +73,8 @@ TC-06 finds the next clock change itself (the next date New York's UTC offset ch
 | API-02 | Same request with `timeZone=Asia/Kolkata` | The same moments as API-01, shown with `+05:30` |
 | API-03 | An event that doesn't exist | 404 with an error message |
 | API-04 | A badly formatted date, or an invalid time zone | 400 with a message naming the bad field |
-| API-05 | `start` after `end` | Should be 400. **Today it returns 200 with no times** (known bug BUG-001). The test is skipped in normal runs, so `main` stays green and the test shows as pending. Run with `INCLUDE_KNOWN_BUGS=true` to see it fail until it's fixed |
+| API-05 | `start` after `end` | Should be 400. **Today it returns 200 with no times** ([BUG-001](bugs/BUG-001-slots-start-after-end.md)). The test is skipped in normal runs, so `main` stays green and the test shows as pending. Run with `INCLUDE_KNOWN_BUGS=true` to see it fail until it's fixed |
+| API-06 | The same fixed-length event with `duration` set to twice its length, or to a whole day | The times shouldn't change: either the same times or a 400 naming `duration`. **Today it changes them: half the times, or none** ([BUG-002](bugs/BUG-002-slots-duration-not-validated.md)). Skipped like API-05 |
 
 **API test settings:** the event lives in the tester's own cal.com account, so its username isn't committed. Set `CAL_API_USERNAME` locally, or as a GitHub Actions repository **secret** (not a plain variable: secrets are masked in logs, and a failing API test's message includes the request path, which contains the username). `CAL_API_EVENT_SLUG` defaults to `30min`. Locally, the API tests skip with a message if the username is missing; in CI (`CI=true`) they fail instead. The `cal-api-version` header is pinned to `2024-09-04`, and responses are checked with zod schemas.
 
@@ -175,3 +176,29 @@ TC-01, TC-03 and TC-06 are in `cypress/e2e/booking/`. All three passed **5 runs 
 | TC-06 daylight saving | ❌ failed | Host's list: `Fri, 12 Mar 2027 3:00pm - 3:30pm`; expected `10:00am - 10:30am` |
 
 The run uploaded `failure-evidence` (screenshots + Cal.diy logs) and `videos`. Auto-fix stays **off** for this pull request, since the failure is intended.
+
+## 10. Bug hunt (2026-11-16)
+
+Full list: [docs/bugs](bugs/README.md). The bug written up for the brief is **[BUG-002](bugs/BUG-002-slots-duration-not-validated.md) (S3 Medium)**.
+
+**How it was found:**
+- After the start-after-end case (BUG-001), I sent the slots API every parameter it accepts, with values a careless or out-of-date caller might send.
+- `duration` stood out. On an event that only offers 30 minutes, sending `duration=60` returns half the times, and `duration=1440` returns none, both as a normal `200`.
+- It reproduces on hosted cal.com (API v2) and on self-hosted Cal.diy v6.2.0 (its internal `slots.getSchedule`), which meets assumption A9.
+
+**Why it was picked over the other leads:**
+- It gives *wrong availability* with no error, and lost bookings caused this way are hard to notice.
+- BUG-001 gives a wrong answer only to a caller who is already mistaken.
+- RE-01 (the confirmation page says an email was sent when none could be) depends on how the instance is configured.
+- RE-02 (React #418) has no visible effect.
+
+**Checked, and found not to be bugs:**
+- Cal.diy's own booking page ignores an unsupported `?duration=` and still books 30 minutes (checked in Chrome).
+- The booking endpoint rejects a length the event doesn't offer (`400 Invalid event length`), so a wrong length can't reach the host's calendar. The harm is limited to what callers of the slots API show.
+
+**Probing safely:**
+- On hosted cal.com, only read-only `GET` requests were sent, one per value. Nothing was booked.
+- Values that might be expensive (0, negative, 1-minute grids) were tried on the local instance first.
+
+**Automation:** API-06 is a known-bug test, skipped like API-05. `INCLUDE_KNOWN_BUGS=true` shows both failing.
+

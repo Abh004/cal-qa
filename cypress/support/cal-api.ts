@@ -40,6 +40,7 @@ export type SlotsQuery = Partial<{
   start: string;
   end: string;
   timeZone: string;
+  duration: number;
 }>;
 
 /** Calls GET /v2/slots without failing on 4xx, so tests can assert error responses. */
