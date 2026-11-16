@@ -1,4 +1,4 @@
-# Decisions (agreed before coding)
+# Decisions and findings log
 
 ## 1. What this is, and for whom
 
@@ -38,7 +38,7 @@ Cal.com's own ~500 test files answer *"did our code change break Cal.com?"*: the
 | A7 | No email server, so emails aren't checked automatically | A local test mail server (Mailpit) comes next |
 | A8 | The red run lives on the unmerged branch `demo/red-run` with an open pull request | `main` stays green, and the red run is easy to link |
 | A9 | The bug must reproduce on v6.2.0 and is also checked on hosted cal.com | Shows how far it reaches; can be reported upstream |
-| A10 | A reviewer either has Docker and Node 20+, or just reads the CI runs | The README covers both |
+| A10 | A reviewer either has Docker and Node 22+, or just reads the CI runs | The README covers both |
 | A11 | A full CI run takes under about 12 minutes | Fast enough for every pull request |
 | A12 | CI retries a failed test once, and a test that only passes on retry is still reported | No silent retries hiding flaky tests |
 | A13 | We don't duplicate tests Cal.com already has, except the smoke test | Every deployment needs its own "can people book?" check; the rest would be redundant |
@@ -202,3 +202,17 @@ Full list: [docs/bugs](bugs/README.md). The bug written up for the brief is **[B
 
 **Automation:** API-06 is a known-bug test, skipped like API-05. `INCLUDE_KNOWN_BUGS=true` shows both failing.
 
+
+## 11. Final docs and fresh-clone check (2026-11-16)
+
+- **Deliverables:**
+  - [docs/test-plan.md](test-plan.md): the one-page test plan;
+  - [docs/automate-next.md](automate-next.md): what to automate next and what to leave manual;
+  - the final [README](../README.md): how to run it, why these 3 tests, why this suite exists alongside Cal.com's, and links to the green and red runs.
+- **Fresh clone:** I cloned `main` (`c689228`) from GitHub into an empty folder and followed the README exactly:
+  - `npm install`;
+  - `npm run app:up`: up in 7 s, plus the seed;
+  - `npm run test:e2e`: 3 of 3 passed;
+  - `npm run test:api`: without a username, all 6 skipped as documented; with one, 4 passed and 2 pending;
+  - `npm run app:down`.
+- **What the fresh-clone check didn't cover:** the Docker image and the Cypress binary were already cached on this Mac. A first-time download is covered by CI instead, which pulls everything on every run (about 3 minutes in all).
