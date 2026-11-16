@@ -28,6 +28,17 @@ Without `CAL_API_USERNAME` they're skipped locally. Tests for already-reported b
 
 `npm run app:up` picks the right image for your machine (`calcom/cal.com:v6.2.0`, or `v6.2.0-arm` on Apple Silicon). Set `CALDIY_IMAGE` to test a different version.
 
+## What's tested
+
+| Spec | Test | Why it's here |
+|---|---|---|
+| `booking/tc01-booking-smoke.cy.ts` | **TC-01 (smoke):** book 10:00 on the next weekday; the confirmation shows the right event, date, time, time zone and guest | If this fails on your deployment, nothing else matters |
+| `booking/tc03-cross-timezone.cy.ts` | **TC-03 (regression):** a Kolkata guest books 10:00 New York, sees it in Kolkata time, and the host's list shows 10:00 for the same booking | Wrong-time meetings fail silently; upstream only tests this maths in isolation |
+| `booking/tc06-daylight-saving.cy.ts` | **TC-06 (edge case):** the same booking on either side of New York's next clock change shifts by an hour in Kolkata, while the host still sees 10:00 and working hours still start at 09:00 | Twice a year, getting this wrong moves every cross-zone meeting |
+| `api/slots-api.cy.ts` | **API-01 to API-05:** Cal.com's public slots API returns well-formed times, the same moments in other time zones, and clear errors | The endpoint behind every public booking page |
+
+Expected times are calculated in the tests with luxon, never typed in, so the tests stay correct in every season. Before each booking test, the local test database's bookings and time holds are emptied, so 10:00 is always free. All test scripts run Chrome in UTC (`TZ=UTC`), the same as CI.
+
 ### Test data
 
 The seed (`docker/seed/seed-qa.ts`) creates:

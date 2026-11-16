@@ -133,4 +133,17 @@ TC-06 finds the next clock change itself (the next date New York's UTC offset ch
 | Fresh start from an empty database (`npm run app:down && npm run app:up`) | About 11s locally, including 588 migrations and the seed |
 | Versions | Cypress 16.2.1 (16.3.0 was only 6 days old), TypeScript 5.9.3 (TypeScript 7's rewritten compiler may not yet work with how Cypress compiles TypeScript), Node 24 LTS, luxon 3.7.2, zod 4.6.7. npm needed explicit approval for Cypress's install step (`allowScripts` in `package.json`) |
 
-**Still to confirm (in step 4, with Cypress itself):** the booking form fields and submit button, the time-zone picker, host login, and the host's bookings list. The browser checks for these stopped partway because the automated safety check for browser actions kept failing; it wasn't a problem with the app.
+## 7. Booking-flow tests (2026-11-16)
+
+TC-01, TC-03 and TC-06 are in `cypress/e2e/booking/`. All three passed **5 runs in a row with retries off** (about 13s of test time per run), with the browser in UTC as on CI.
+
+| Finding | Decision |
+|---|---|
+| Booking form: `input[name=name]`, `input[name=email]`, `textarea[name=notes]`, submit `confirm-book-button` | Used by `cy.confirmBooking`, which yields the booking uid from the `/booking/<uid>` confirmation URL |
+| Time-zone picker: type a city into `timezone-select` and press Enter. The options are react-select items with no `role` (ids like `react-select-3-option-256`). The choice is saved as `localStorage["timeOption.preferredTimeZone"]` | `cy.chooseTimeZone` checks the saved value, so a wrong pick fails right there |
+| Days have no date attribute, only their number; clicking one adds `date=yyyy-MM-dd` to the URL | `cy.openDay` moves to the right month, clicks the day, then **checks the URL date**, so it can't silently click the wrong day |
+| Host login: `GET /api/auth/csrf`, then `POST /api/auth/callback/credentials` (form) | `cy.loginAsHost` uses it with `cy.session`; no login page |
+| Host's list: `/bookings/upcoming` rows are `booking-item` with `data-booking-uid`, shown in the **host's** time zone and 12-hour clock ("Thu, 19 Nov" / "10:00am - 10:30am") | Tests find the exact booking by uid |
+| Cal.com **holds a time for a few minutes** after a guest picks it (`SelectedSlots`), so one test's pick hid 10:00 from the next test | The `db:clearBookings` task (run before each booking test) empties bookings **and** holds in the local test database. Host and event are kept |
+| This Mac's time zone is Kolkata, the same as the test guest's, so TC-03 couldn't tell the guest's *chosen* zone from the computer's | Every test script sets `TZ=UTC` (Chrome honours it; checked), so local runs match CI and TC-03 proves the chosen zone is used |
+| Cancelling through `POST /api/cancel` needs a different CSRF token than login | Not used; clearing the test database is simpler and leaves nothing behind |

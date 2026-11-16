@@ -30,6 +30,25 @@ export function dateIn(utcIso: string, zone: string): string {
   return DateTime.fromISO(utcIso, { zone: "utc" }).setZone(zone).toISODate()!;
 }
 
+/** What the guest's confirmation page should show for a booking, in the guest's zone. */
+export function confirmationText(startUtcIso: string, lengthMinutes: number, zone: string) {
+  const start = DateTime.fromISO(startUtcIso, { zone: "utc" }).setZone(zone).setLocale("en-US");
+  const end = start.plus({ minutes: lengthMinutes });
+  return {
+    date: start.toFormat("cccc, LLLL d, yyyy"), // "Wednesday, November 18, 2026"
+    times: `${start.toFormat("HH:mm")} - ${end.toFormat("HH:mm")}`, // "20:30 - 21:00"
+    zoneName: start.toFormat("ZZZZZ"), // "India Standard Time"
+  };
+}
+
+/** What the host's bookings list should show, in the host's zone and 12-hour clock: "Thu, 19 Nov" / "10:00am - 10:30am". */
+export function hostListText(startUtcIso: string, lengthMinutes: number, zone: string) {
+  const start = DateTime.fromISO(startUtcIso, { zone: "utc" }).setZone(zone).setLocale("en-US");
+  const end = start.plus({ minutes: lengthMinutes });
+  const clock = (d: DateTime) => d.toFormat("h:mma").toLowerCase();
+  return { date: start.toFormat("ccc, d LLL"), times: `${clock(start)} - ${clock(end)}` };
+}
+
 /**
  * The next time `zone` changes its UTC offset (daylight saving starts or ends),
  * with the weekday just before and just after it. The weekday before is at least

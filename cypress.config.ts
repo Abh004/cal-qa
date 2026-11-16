@@ -1,9 +1,31 @@
+import { execFileSync } from "node:child_process";
+
 import { defineConfig } from "cypress";
+
+/**
+ * Empties bookings (and rows that depend on them) and time-slot holds in the local test
+ * database, so every booking test starts from the same state: 10:00 always free.
+ * Holds matter because Cal.com reserves a time for a few minutes after a guest picks it
+ * ("SelectedSlots"), so a previous test's pick would hide that time from the next test.
+ * Host, schedule and event are untouched. Only ever points at the docker/compose.yml
+ * test database; set CAL_DB_RESET=off when running against an instance you don't own.
+ */
+function clearBookings(): null {
+  if (process.env.CAL_DB_RESET === "off") return null;
+  const sql = 'TRUNCATE "Booking" CASCADE; TRUNCATE "SelectedSlots";';
+  execFileSync("docker", ["compose", "-f", "docker/compose.yml", "exec", "-T", "db", "psql", "-U", "calcom", "-d", "calcom", "-q", "-c", sql], {
+    stdio: "pipe",
+  });
+  return null;
+}
 
 export default defineConfig({
   e2e: {
     // The self-hosted Cal.diy instance started by `npm run app:up`.
     baseUrl: process.env.CAL_BASE_URL ?? "http://localhost:3000",
+    setupNodeEvents(on) {
+      on("task", { "db:clearBookings": clearBookings });
+    },
     specPattern: "cypress/e2e/**/*.cy.ts",
     supportFile: "cypress/support/e2e.ts",
     viewportWidth: 1280,

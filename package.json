@@ -12,10 +12,10 @@
     "app:seed": "docker/seed.sh",
     "app:down": "docker compose -f docker/compose.yml down -v",
     "app:logs": "docker compose -f docker/compose.yml logs -f calcom",
-    "test:e2e": "cypress run --browser chrome --spec 'cypress/e2e/booking/**/*.cy.ts'",
-    "test:api": "cypress run --browser chrome --spec 'cypress/e2e/api/**/*.cy.ts'",
-    "test": "cypress run --browser chrome",
-    "cy:open": "cypress open",
+    "test:e2e": "TZ=UTC cypress run --browser chrome --spec 'cypress/e2e/booking/**/*.cy.ts'",
+    "test:api": "TZ=UTC cypress run --browser chrome --spec 'cypress/e2e/api/**/*.cy.ts'",
+    "test": "TZ=UTC cypress run --browser chrome",
+    "cy:open": "TZ=UTC cypress open",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
