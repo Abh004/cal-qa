@@ -36,7 +36,8 @@ export default defineConfig({
     defaultCommandTimeout: 10_000,
     pageLoadTimeout: 60_000,
     // Retry once in `cypress run` (CI and local runs); a pass on retry is still reported as flaky.
-    retries: { runMode: 1, openMode: 0 },
+    // CAL_RETRIES=0 turns retries off, e.g. to prove stability (`--config retries=0` doesn't override this object).
+    retries: { runMode: Number(process.env.CAL_RETRIES || 1), openMode: 0 },
     video: true,
     screenshotOnRunFailure: true,
     expose: {

@@ -135,7 +135,9 @@ TC-06 finds the next clock change itself (the next date New York's UTC offset ch
 
 ## 7. Booking-flow tests (2026-11-16)
 
-TC-01, TC-03 and TC-06 are in `cypress/e2e/booking/`. All three passed **5 runs in a row with retries off** (about 13s of test time per run), with the browser in UTC as on CI.
+TC-01, TC-03 and TC-06 are in `cypress/e2e/booking/`. All three passed **5 runs in a row with retries off** (`CAL_RETRIES=0`; about 13s of test time per run), with the browser in UTC as on CI.
+
+> **Correction:** the first 5-run check used `--config retries=0`, which turned out **not** to override the `retries` object in `cypress.config.ts`, so retries were still on. All runs had passed on the first attempt anyway, but that wasn't proven. `CAL_RETRIES=0` now controls it (checked with a throwaway failing test: 2 attempts when unset, 1 when `0`), and the 5-run check was redone with it: 5 of 5 passed, with no retried attempts.
 
 | Finding | Decision |
 |---|---|
@@ -158,3 +160,18 @@ TC-01, TC-03 and TC-06 are in `cypress/e2e/booking/`. All three passed **5 runs 
 | Starting Cal.diy v6.2.0 (amd64) on a GitHub runner, including the 1.6 GB image download, migrations and seed | About 1 min 20 s |
 | Username for the API tests | `CAL_API_USERNAME` repository secret (masked in logs), set from stdin |
 | Supply chain | Every action pinned to a commit SHA (version in a comment); workflow token is read-only |
+
+## 9. Deliberate red run (2026-11-16)
+
+**Red run:** [run 43843717218](https://github.com/Abh004/cal-qa/actions/runs/43843717218) on the do-not-merge pull request [#1](https://github.com/Abh004/cal-qa/pull/1) (branch `demo/red-run`).
+
+**What was broken:** no test code. The seed saves the host's **profile time zone as Europe/London** while their **working hours stay on America/New_York**, a realistic misconfiguration. Guests can still book, but the host's dashboard shows meetings at the wrong hour.
+
+| Job / test | Result | Evidence |
+|---|---|---|
+| API tests | ✅ passed | Unaffected (hosted Cal.com API) |
+| TC-01 smoke | ✅ passed | The guest side still works |
+| TC-03 cross-time-zone | ❌ failed | Host's list: `Wed, 18 Nov 3:00pm - 3:30pm`; expected `10:00am - 10:30am` |
+| TC-06 daylight saving | ❌ failed | Host's list: `Fri, 12 Mar 2027 3:00pm - 3:30pm`; expected `10:00am - 10:30am` |
+
+The run uploaded `failure-evidence` (screenshots + Cal.diy logs) and `videos`. Auto-fix stays **off** for this pull request, since the failure is intended.
