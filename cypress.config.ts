@@ -21,8 +21,10 @@ function clearBookings(): null {
 
 export default defineConfig({
   e2e: {
-    // The self-hosted Cal.diy instance started by `npm run app:up`.
-    baseUrl: process.env.CAL_BASE_URL ?? "http://localhost:3000",
+    // The self-hosted Cal.diy instance started by `npm run app:up`. Cypress checks this
+    // server is up before running any spec, so the API tests (which only call the hosted
+    // Cal.com API) set CAL_BASE_URL=none to run without the local app.
+    baseUrl: process.env.CAL_BASE_URL === "none" ? null : (process.env.CAL_BASE_URL ?? "http://localhost:3000"),
     setupNodeEvents(on) {
       on("task", { "db:clearBookings": clearBookings });
     },

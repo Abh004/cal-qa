@@ -28,6 +28,17 @@ Without `CAL_API_USERNAME` they're skipped locally. Tests for already-reported b
 
 `npm run app:up` picks the right image for your machine (`calcom/cal.com:v6.2.0`, or `v6.2.0-arm` on Apple Silicon). Set `CALDIY_IMAGE` to test a different version.
 
+## CI
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to `main` and every pull request, in two parallel jobs:
+
+| Job | What it does |
+|---|---|
+| **API tests** | Runs `cypress/e2e/api` in Chrome. Needs the `CAL_API_USERNAME` repository secret (a secret, so it's masked in logs) |
+| **Booking-flow tests** | Starts Cal.diy + Postgres with `npm run app:up`, seeds the test host, runs `cypress/e2e/booking` in Chrome. Uploads videos on every run, and screenshots + Cal.diy logs when something fails |
+
+**Upgrade check:** run the workflow by hand (Actions → CI → Run workflow) and enter the Cal.diy image to test, for example the next release, before deploying it.
+
 ## What's tested
 
 | Spec | Test | Why it's here |
