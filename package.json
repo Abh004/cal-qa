@@ -1,0 +1,32 @@
+{
+  "name": "cal-qa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Upgrade check for a self-hosted Cal.diy (open-source Cal.com): Cypress UI tests for the booking flow and API tests for Cal.com's public slots API.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "app:up": "scripts/app-up.sh",
+    "app:seed": "docker/seed.sh",
+    "app:down": "docker compose -f docker/compose.yml down -v",
+    "app:logs": "docker compose -f docker/compose.yml logs -f calcom",
+    "test:e2e": "cypress run --browser chrome --spec 'cypress/e2e/booking/**/*.cy.ts'",
+    "test:api": "cypress run --browser chrome --spec 'cypress/e2e/api/**/*.cy.ts'",
+    "test": "cypress run --browser chrome",
+    "cy:open": "cypress open",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/luxon": "3.7.6",
+    "@types/node": "24.19.2",
+    "cypress": "16.2.1",
+    "luxon": "3.7.2",
+    "typescript": "5.9.3",
+    "zod": "4.6.7"
+  },
+  "allowScripts": {
+    "cypress@16.2.1": true
+  }
+}

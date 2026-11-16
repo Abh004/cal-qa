@@ -1,0 +1,39 @@
+# Cal.diy (open-source Cal.com) + Postgres, for the test suite.
+# CALDIY_IMAGE picks the version under test:
+#   CI (amd64):            calcom/cal.com:v6.2.0
+#   Apple Silicon (arm64): calcom/cal.com:v6.2.0-arm
+name: cal-qa
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: calcom
+      POSTGRES_PASSWORD: calcom
+      POSTGRES_DB: calcom
+    ports:
+      - "127.0.0.1:5455:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calcom -d calcom"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  calcom:
+    image: ${CALDIY_IMAGE:-calcom/cal.com:v6.2.0}
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://calcom:calcom@db:5432/calcom
+      DATABASE_DIRECT_URL: postgresql://calcom:calcom@db:5432/calcom
+      DATABASE_HOST: db:5432
+      NEXT_PUBLIC_WEBAPP_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+      CALCOM_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_TELEMETRY_DISABLED: "1"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./seed:/seed:ro
+    depends_on:
+      db:
+        condition: service_healthy
