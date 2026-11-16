@@ -33,14 +33,14 @@ export default defineConfig({
     // Next.js pages can be slow on the first, uncached load after the container starts.
     defaultCommandTimeout: 10_000,
     pageLoadTimeout: 60_000,
-    // Retry once in CI only; a test that passes on retry still shows as flaky in the report.
+    // Retry once in `cypress run` (CI and local runs); a pass on retry is still reported as flaky.
     retries: { runMode: 1, openMode: 0 },
     video: true,
     screenshotOnRunFailure: true,
     expose: {
       // Hosted Cal.com public API (API tests). The event belongs to the tester's own
       // cal.com account, so it isn't committed: set CAL_API_USERNAME (and optionally
-      // CAL_API_EVENT_SLUG) locally, or as a GitHub Actions variable in CI.
+      // CAL_API_EVENT_SLUG) locally, or as a GitHub Actions secret in CI.
       apiBaseUrl: "https://api.cal.com/v2",
       apiVersion: "2024-09-04", // pinned, so a new API version can't silently change responses
       apiUsername: process.env.CAL_API_USERNAME ?? "",

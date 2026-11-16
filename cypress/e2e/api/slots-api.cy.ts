@@ -24,7 +24,7 @@ describe("Cal.com public slots API (GET /v2/slots)", () => {
   before(function () {
     if (apiConfig().username) return;
     if (Cypress.expose("requireApiConfig")) {
-      throw new Error("CAL_API_USERNAME is not set. In CI, add it as a repository variable.");
+      throw new Error("CAL_API_USERNAME is not set. In CI, add it as a repository secret.");
     }
     cy.log("Skipped: set CAL_API_USERNAME to a cal.com username with a public event");
     this.skip();
