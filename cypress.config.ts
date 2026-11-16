@@ -15,13 +15,19 @@ export default defineConfig({
     retries: { runMode: 1, openMode: 0 },
     video: true,
     screenshotOnRunFailure: true,
-    env: {
-      // Hosted Cal.com public API (API tests). Set CYPRESS_API_USERNAME / CYPRESS_API_EVENT_SLUG
-      // to a public event in your own cal.com account.
+    expose: {
+      // Hosted Cal.com public API (API tests). The event belongs to the tester's own
+      // cal.com account, so it isn't committed: set CAL_API_USERNAME (and optionally
+      // CAL_API_EVENT_SLUG) locally, or as a GitHub Actions variable in CI.
       apiBaseUrl: "https://api.cal.com/v2",
-      apiVersion: "2024-09-04",
-      apiUsername: "",
-      apiEventSlug: "",
+      apiVersion: "2024-09-04", // pinned, so a new API version can't silently change responses
+      apiUsername: process.env.CAL_API_USERNAME ?? "",
+      apiEventSlug: process.env.CAL_API_EVENT_SLUG ?? "30min",
+      apiEventLengthMinutes: Number(process.env.CAL_API_EVENT_LENGTH ?? 30),
+      // In CI a missing username is an error; locally the API tests are skipped with a message.
+      requireApiConfig: Boolean(process.env.CI),
+      // Tests for known, already-reported bugs are skipped unless this is set (see docs/bugs).
+      includeKnownBugs: process.env.INCLUDE_KNOWN_BUGS === "true",
     },
   },
 });

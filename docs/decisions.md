@@ -73,7 +73,9 @@ TC-06 finds the next clock change itself (the next date New York's UTC offset ch
 | API-02 | Same request with `timeZone=Asia/Kolkata` | The same moments as API-01, shown with `+05:30` |
 | API-03 | An event that doesn't exist | 404 with an error message |
 | API-04 | A badly formatted date, or an invalid time zone | 400 with a message naming the bad field |
-| API-05 | `start` after `end` | Should be 400. **Today it returns 200 with no times**: our bug lead, so this test fails until it's fixed |
+| API-05 | `start` after `end` | Should be 400. **Today it returns 200 with no times** (known bug BUG-001). The test is skipped in normal runs, so `main` stays green and the test shows as pending. Run with `INCLUDE_KNOWN_BUGS=true` to see it fail until it's fixed |
+
+**API test settings:** the event lives in the tester's own cal.com account, so its username isn't committed. Set `CAL_API_USERNAME` locally, or as a GitHub Actions repository variable. `CAL_API_EVENT_SLUG` defaults to `30min`. Locally, the API tests skip with a message if the username is missing; in CI (`CI=true`) they fail instead. The `cal-api-version` header is pinned to `2024-09-04`, and responses are checked with zod schemas.
 
 ## 4. Build order
 

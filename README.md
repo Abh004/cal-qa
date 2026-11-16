@@ -15,9 +15,16 @@ An upgrade check for a team that self-hosts **Cal.diy** (the open-source edition
 npm install
 npm run app:up     # starts Cal.diy v6.2.0 + Postgres, waits for it, seeds the test host
 npm run test:e2e   # booking-flow tests (Chrome)
-npm run test:api   # Cal.com public API tests
 npm run app:down   # stops everything and deletes the test database
 ```
+
+The API tests don't need Docker. They read a public event from a cal.com account:
+
+```bash
+CAL_API_USERNAME=<your-cal.com-username> npm run test:api   # event slug defaults to 30min (CAL_API_EVENT_SLUG)
+```
+
+Without `CAL_API_USERNAME` they're skipped locally. Tests for already-reported bugs are skipped too; add `INCLUDE_KNOWN_BUGS=true` to run them.
 
 `npm run app:up` picks the right image for your machine (`calcom/cal.com:v6.2.0`, or `v6.2.0-arm` on Apple Silicon). Set `CALDIY_IMAGE` to test a different version.
 
