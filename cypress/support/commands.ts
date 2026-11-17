@@ -1,6 +1,6 @@
 import type { DateTime } from "luxon";
 
-import { EVENT, HOST } from "./test-data";
+import { EVENT, HOST, type Event, type Host } from "./test-data";
 
 /**
  * Custom commands for the public booking page and the host's dashboard.
@@ -11,10 +11,10 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
     interface Chainable {
-      /** Logs in as qa-host through the API (no login page), cached across tests with cy.session. */
-      loginAsHost(): Chainable<void>;
-      /** Opens the seeded event's public booking page. */
-      openBookingPage(): Chainable<void>;
+      /** Logs in as a seeded host (qa-host by default) through the API (no login page), cached with cy.session. */
+      loginAsHost(host?: Host): Chainable<void>;
+      /** Opens a seeded event's public booking page (qa-host's by default). */
+      openBookingPage(event?: Event): Chainable<void>;
       /** Picks the guest's time zone in the booking page's picker, by typing a city name. */
       chooseTimeZone(city: string, ianaZone: string): Chainable<void>;
       /** Switches the booking page to the 24-hour clock, so labels read "20:30". */
@@ -29,30 +29,30 @@ declare global {
   }
 }
 
-Cypress.Commands.add("loginAsHost", () => {
+Cypress.Commands.add("loginAsHost", (host: Host = HOST) => {
   cy.session(
-    HOST.username,
+    host.username,
     () => {
       cy.request("/api/auth/csrf").then(({ body }) =>
         cy.request({
           method: "POST",
           url: "/api/auth/callback/credentials",
           form: true,
-          body: { csrfToken: body.csrfToken, email: HOST.email, password: HOST.password, callbackUrl: "/", json: "true" },
+          body: { csrfToken: body.csrfToken, email: host.email, password: host.password, callbackUrl: "/", json: "true" },
         })
       );
     },
     {
       validate: () => {
-        cy.request("/api/auth/session").its("body.user.username").should("eq", HOST.username);
+        cy.request("/api/auth/session").its("body.user.username").should("eq", host.username);
       },
     }
   );
 });
 
-Cypress.Commands.add("openBookingPage", () => {
-  cy.visit(EVENT.path);
-  cy.get('[data-testid="event-title"]').should("contain.text", EVENT.title);
+Cypress.Commands.add("openBookingPage", (event: Event = EVENT) => {
+  cy.visit(event.path);
+  cy.get('[data-testid="event-title"]').should("contain.text", event.title);
   // The calendar has loaded its times once at least one day is clickable.
   cy.get('[data-testid="day"][data-disabled="false"]').should("exist");
 });

@@ -32,7 +32,7 @@ So this suite doesn't copy Cal.com's tests. It covers:
 |---|---|---|
 | **TC-01: smoke** <br> [`tc01-booking-smoke.cy.ts`](cypress/e2e/booking/tc01-booking-smoke.cy.ts) | A guest books 10:00 on the next weekday. The confirmation shows the right event, date, time, time zone and guest | If people can't book on *our* deployment, nothing else matters. It's the one test Cal.com can't run for us |
 | **TC-03: regression** <br> [`tc03-cross-timezone.cy.ts`](cypress/e2e/booking/tc03-cross-timezone.cy.ts) | A guest in Kolkata books 10:00 New York. They see the correct Kolkata time, and the host's bookings list shows 10:00 for that same booking | Wrong-hour meetings are the worst failure a scheduler can have, because everything *looks* fine until two people miss each other. Cal.com tests the maths only in isolation. The [red run](https://github.com/Abh004/cal-qa/actions/runs/43843717218) shows this test catching a host time-zone regression that the smoke test misses |
-| **TC-06: edge case** <br> [`tc06-daylight-saving.cy.ts`](cypress/e2e/booking/tc06-daylight-saving.cy.ts) | The same booking on the weekdays either side of New York's next clock change. The guest's time moves by exactly one hour, the host still sees 10:00, and the host's day still starts at 09:00 | It breaks twice a year, at exactly the moment nobody is testing by hand. The test finds the next clock change itself, so it never goes stale |
+| **TC-06: edge case** <br> [`tc06-daylight-saving.cy.ts`](cypress/e2e/booking/tc06-daylight-saving.cy.ts) | The same booking on the weekdays either side of a clock change, from both sides. **A, the host's clocks change:** a New York host and a Kolkata guest. The guest's time moves by an hour, the host still sees 10:00, and the host's day still starts at 09:00. **B, the guest's clocks change:** an India host and a New York guest. India never changes its clocks, but the guest's clock moves by an hour across midnight, so the meeting appears under a different date for the guest on one side of the change (March 2027: Thursday 23:30, then Monday 00:30) | It breaks twice a year, at exactly the moment nobody is testing by hand, and B also puts the meeting on the wrong day. The test finds the next clock change itself, so it never goes stale |
 
 **Why not double booking (TC-02)?** Cal.com's own suite already tests it directly, so repeating it here would add maintenance without catching anything new. Simultaneous double booking (TC-04) is first in line to automate next.
 
@@ -103,11 +103,11 @@ The seed ([`docker/seed/seed-qa.ts`](docker/seed/seed-qa.ts)) creates:
 
 | | |
 |---|---|
-| Host | `qa-host` (`qa-host@cal-qa.test`), time zone America/New_York |
-| Availability | Monday to Friday, 09:00–17:00 New York time |
-| Event | "30 min meeting" at http://localhost:3000/qa-host/30min |
+| Hosts | `qa-host` (`qa-host@cal-qa.test`), time zone America/New_York <br> `qa-host-in` (`qa-host-in@cal-qa.test`), time zone Asia/Kolkata, used by TC-06 B |
+| Availability | Monday to Friday, 09:00–17:00 in each host's own time zone |
+| Events | "30 min meeting" at http://localhost:3000/qa-host/30min and http://localhost:3000/qa-host-in/30min |
 
-The host's password is a test-only value in [`cypress/support/test-data.ts`](cypress/support/test-data.ts), and exists only in the local test instance. `docker/make-env.sh` generates throwaway app secrets into the git-ignored `docker/.env`.
+The hosts' password is a test-only value in [`cypress/support/test-data.ts`](cypress/support/test-data.ts), and exists only in the local test instance. `docker/make-env.sh` generates throwaway app secrets into the git-ignored `docker/.env`.
 
 ## Bugs found
 

@@ -18,8 +18,27 @@ export const EVENT = {
   path: `/${HOST.username}/30min`,
 } as const;
 
-/** Guest time zone used by the cross-time-zone tests. No daylight saving, UTC+05:30. */
-export const GUEST_TIME_ZONE = "Asia/Kolkata";
+/**
+ * A second host in India, which never changes its clocks. With a New York guest, the
+ * daylight-saving change happens on the guest's side instead of the host's (TC-06).
+ */
+export const HOST_IN = {
+  username: "qa-host-in",
+  name: "QA Host India",
+  email: "qa-host-in@cal-qa.test",
+  password: HOST.password, // the same test-only credential
+  timeZone: "Asia/Kolkata",
+  workingHours: { start: "09:00", end: "17:00" }, // Monday to Friday
+} as const;
+
+export const EVENT_IN = { ...EVENT, path: `/${HOST_IN.username}/30min` } as const;
+
+/** Guest time zones. Kolkata: UTC+05:30, no daylight saving. New York: changes its clocks twice a year. */
+export const KOLKATA = "Asia/Kolkata";
+export const NEW_YORK = "America/New_York";
+
+export type Host = typeof HOST | typeof HOST_IN;
+export type Event = typeof EVENT | typeof EVENT_IN;
 
 /** A unique guest per test run, so bookings never collide across runs or retries. */
 export const newGuest = (label: string) => {

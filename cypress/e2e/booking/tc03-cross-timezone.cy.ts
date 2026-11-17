@@ -4,7 +4,7 @@
  * that the guest's screen, the guest's confirmation and the host's bookings list agree.
  * If they don't, someone joins the meeting at the wrong time and nothing errors.
  */
-import { EVENT, GUEST_TIME_ZONE, HOST, newGuest } from "../../support/test-data";
+import { EVENT, KOLKATA, HOST, newGuest } from "../../support/test-data";
 import { clockTimeIn, confirmationText, dateIn, hostListText, nextWeekday, wallTimeToUtcIso } from "../../support/time";
 
 describe("TC-03 guest and host in different time zones", () => {
@@ -14,18 +14,18 @@ describe("TC-03 guest and host in different time zones", () => {
     const guest = newGuest("tz");
     const day = nextWeekday(HOST.timeZone);
     const start = wallTimeToUtcIso(day, "10:00"); // the moment both people must agree on
-    const guestView = confirmationText(start, EVENT.lengthMinutes, GUEST_TIME_ZONE);
+    const guestView = confirmationText(start, EVENT.lengthMinutes, KOLKATA);
     const hostView = hostListText(start, EVENT.lengthMinutes, HOST.timeZone);
 
     // Precondition: 10:00 New York falls on the same calendar day in Kolkata (it's 19:30 or 20:30).
-    expect(dateIn(start, GUEST_TIME_ZONE), "Kolkata date of the booking").to.eq(day.toISODate());
+    expect(dateIn(start, KOLKATA), "Kolkata date of the booking").to.eq(day.toISODate());
 
     // Guest side: pick Kolkata, then pick the moment that is 10:00 in New York.
     cy.openBookingPage();
-    cy.chooseTimeZone("Kolkata", GUEST_TIME_ZONE);
+    cy.chooseTimeZone("Kolkata", KOLKATA);
     cy.use24HourClock();
     cy.openDay(day);
-    cy.pickTime(start).should("eq", clockTimeIn(start, GUEST_TIME_ZONE));
+    cy.pickTime(start).should("eq", clockTimeIn(start, KOLKATA));
     const bookingUid = cy.confirmBooking(guest);
 
     cy.get('[data-testid="success-page"]').within(() => {

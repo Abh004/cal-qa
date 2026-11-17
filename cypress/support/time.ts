@@ -20,6 +20,21 @@ export function wallTimeToUtcIso(day: DateTime, hhmm: string): string {
   return day.set({ hour, minute, second: 0, millisecond: 0 }).toUTC().toISO()!;
 }
 
+/** The same calendar date as `day`, starting at midnight in `zone` (e.g. a New York date, as a day in India). */
+export function sameDateIn(day: DateTime, zone: string): DateTime {
+  return DateTime.fromObject({ year: day.year, month: day.month, day: day.day }, { zone });
+}
+
+/** The calendar day a UTC moment falls on in `zone`, as a DateTime (for opening it in the calendar). */
+export function dayIn(utcIso: string, zone: string): DateTime {
+  return DateTime.fromISO(utcIso, { zone: "utc" }).setZone(zone).startOf("day");
+}
+
+/** The UTC offset, in minutes, that `zone` uses at a UTC moment (e.g. -300 for New York in winter). */
+export function offsetIn(utcIso: string, zone: string): number {
+  return DateTime.fromISO(utcIso, { zone: "utc" }).setZone(zone).offset;
+}
+
 /** How a UTC moment reads on a clock in `zone`, e.g. "20:30". */
 export function clockTimeIn(utcIso: string, zone: string, format = "HH:mm"): string {
   return DateTime.fromISO(utcIso, { zone: "utc" }).setZone(zone).toFormat(format);

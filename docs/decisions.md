@@ -33,7 +33,7 @@ Cal.com's own ~500 test files answer *"did our code change break Cal.com?"*: the
 | A2 | "The flow" is the **invitee booking flow**. The host side is used only to check results | It's where a user is hurt most if something breaks |
 | A3 | The API test hits **hosted Cal.com's `GET /v2/slots`**, read-only, against an event in our own free account | The app's own public API; it needs no key. Trade-off: not the same copy of the app as the UI tests |
 | A4 | Running the app ourselves in CI counts as "running it in CI" | The brief doesn't require testing a live site; a self-run copy is reliable |
-| A5 | Test host `qa-host`: America/New_York, Mon–Fri 09:00–17:00, one 30-minute event | Fixed data means expected results can be stated in advance |
+| A5 | Test host `qa-host`: America/New_York, Mon–Fri 09:00–17:00, one 30-minute event. A second host, `qa-host-in` (Asia/Kolkata, same hours and event), lets TC-06 test a clock change on the guest's side (section 12) | Fixed data means expected results can be stated in advance |
 | A6 | English language, desktop window 1280×800 | Keeps the 3 tests focused; phone sizes come next |
 | A7 | No email server, so emails aren't checked automatically | A local test mail server (Mailpit) comes next |
 | A8 | The red run lives on the unmerged branch `demo/red-run` with an open pull request | `main` stays green, and the red run is easy to link |
@@ -57,7 +57,7 @@ Starting data for every test: host `qa-host`, 30-minute event, Mon–Fri 9–5 N
 | **TC-03** | A guest set to Kolkata time books the time that is 10:00 in New York; the host checks their bookings | The guest's confirmation shows the calculated Kolkata time; the host's bookings list shows 10:00 New York time for the same booking | Only the maths, in isolation | **Automate (regression)** |
 | TC-04 | Two people try to book the same time at the same moment | Exactly one booking succeeds; the other is clearly rejected | Partly (times are held while someone is choosing) | Next |
 | TC-05 | Times offered on weekends, outside 9–5, and on days the host has changed | Nothing is offered outside the host's availability | Yes, in isolated tests | Rely on upstream |
-| **TC-06** | Daylight-saving week: a Kolkata guest books 10:00 New York time on the weekday **before** and the weekday **after** the next US clock change | The first time offered each day is 09:00 New York, and the guest's Kolkata times shift by one hour across the change (for Mar 14 2027: 20:30 before, 19:30 after). Both confirmations and the host's list show 10:00 New York | Only the maths, in isolation | **Automate (edge case)** |
+| **TC-06** | Daylight-saving week: a Kolkata guest books 10:00 New York time on the weekday **before** and the weekday **after** the next US clock change | The first time offered each day is 09:00 New York, and the guest's Kolkata times shift by one hour across the change (for Mar 14 2027: 20:30 before, 19:30 after). Both confirmations and the host's list show 10:00 New York. **Also the reverse (added later, section 12):** an India host and a New York guest, where the guest finds each meeting under their own date | Only the maths, in isolation | **Automate (edge case)** |
 | TC-07 | Minimum notice, buffer between meetings, how far ahead people can book | Times that break those rules aren't offered | Partly (limits test switched off) | Next |
 | TC-08 | Blank name, badly formatted email, very long or non-Latin name | Clear errors and no booking created; valid unusual names still work | Partly | Next |
 | TC-09 | Reschedule and cancel through the booking's link | The old time is freed and the new one blocked; a cancelled time is offered again | Yes (`reschedule.e2e.ts`) | Rely on upstream |
@@ -216,3 +216,34 @@ Full list: [docs/bugs](bugs/README.md). The bug written up for the brief is **[B
   - `npm run test:api`: without a username, all 6 skipped as documented; with one, 4 passed and 2 pending;
   - `npm run app:down`.
 - **What the fresh-clone check didn't cover:** the Docker image and the Cypress binary were already cached on this Mac. A first-time download is covered by CI instead, which pulls everything on every run (about 3 minutes in all).
+
+## 12. TC-06 from both sides (2026-11-17)
+
+**Why:** with a New York host, TC-06 tested only a clock change on the *host's* side. An India host (India hasn't changed its clocks since 1945) moves the clock change to the *guest's* side, and that's a different kind of bug. 10:00 India time is 04:30 UTC every day, but for a New York guest it falls either side of midnight depending on the season. So the meeting appears under a different date for the guest on one side of the change.
+
+| Host day (10:00 India time) | UTC | New York guest sees |
+|---|---|---|
+| Fri Mar 12, 2027 (before the US change) | 04:30Z | **Thu Mar 11, 23:30**: the guest's previous day |
+| Mon Mar 15, 2027 (after) | 04:30Z | Mon Mar 15, 00:30: the same day |
+| Fri Nov 5, 2027 (before the November change) | 04:30Z | Fri Nov 5, 00:30: the same day |
+| Mon Nov 8, 2027 (after) | 04:30Z | **Sun Nov 7, 23:30**: the guest's previous day |
+
+**What changed:**
+- The seed creates `qa-host-in`. The seed now has one `seedHost()` used for both hosts.
+- `loginAsHost(host)` and `openBookingPage(event)` take an optional host or event, and still default to `qa-host`.
+- New helpers: `sameDateIn`, `dayIn` and `offsetIn`.
+- `GUEST_TIME_ZONE` is split into `KOLKATA` and `NEW_YORK`.
+- TC-06 is now two tests: **A** (the host's clocks change, as before) and **B** (the guest's clocks change).
+
+**How B works:**
+- It finds the next clock change in the guest's zone.
+- It books 10:00 India time on the weekdays either side, opening the calendar on the **guest's** date for each.
+- It checks the guest's label, the confirmation, and the host's list, which must show `10:00am` on the host's own dates.
+- Its preconditions hold in both directions: each booking is on its own side of the change, and the guest's date matches the host's on exactly one side. I checked the November case with the helpers, starting from June 2027.
+- B has no 09:00 working-hours check, because India's hours never move. That check would also land on a different guest day.
+
+**Results:**
+- **Stability:** all 4 booking tests passed 5 runs in a row with retries off (about 19 s of test time per run).
+- **B has teeth:** with `qa-host-in`'s profile time zone set to Europe/London (the red run's fault, applied in SQL and then reverted with the seed), B failed on the host's list (`Fri, 12 Mar 2027 4:30am - 5:00am`, expected `10:00am`) while A stayed green.
+- **The red run is unchanged:** PR #1 stays on its old base.
+

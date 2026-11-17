@@ -2,7 +2,7 @@
 
 **Under test:** the public booking flow of Cal.com, through the open-source edition **Cal.diy v6.2.0** run by a team that self-hosts it, plus Cal.com's public slots API.
 **Purpose:** decide whether a new Cal.diy version is safe to deploy. If the suite is green, upgrade; if it's red, don't.
-**Fixed test data:** host `qa-host` (New York, Mon–Fri 09:00–17:00), one 30-minute event, a fresh database for every run. The guest is in Kolkata unless a test says otherwise.
+**Fixed test data:** host `qa-host` (New York, Mon–Fri 09:00–17:00) and, for TC-06's second half, host `qa-host-in` (India, same hours). Each has one 30-minute event, and every run starts from a fresh database. The guest is in Kolkata unless a test says otherwise.
 
 ## What the flow must do
 
@@ -24,7 +24,7 @@ Ordered by how badly a user is hurt if the case breaks. The last column says how
 | TC-03 | A Kolkata guest books 10:00 New York; the host checks their bookings | The guest sees the calculated Kolkata time; the host sees 10:00 for the same booking | **Automated: regression** |
 | TC-04 | Two guests submit the same time at the same moment | Exactly one booking; the other guest gets a clear error | Next to automate |
 | TC-05 | Weekends, outside 9–5, and days the host has blocked | Nothing is offered outside the host's availability | Cal.com's own tests |
-| TC-06 | The same booking on the weekdays before and after the next US clock change | The host still sees 10:00, the first time offered is still 09:00, and the guest's time moves by exactly one hour | **Automated: edge case** |
+| TC-06 | The same booking on the weekdays before and after the next US clock change, from both sides: a New York host with a Kolkata guest, then an India host with a New York guest | The host still sees 10:00 and the guest's time moves by exactly one hour. A New York host's day still starts at 09:00. A New York guest finds the meeting under their own date, even when it's not the host's | **Automated: edge case** |
 | TC-07 | Minimum notice, buffers, how far ahead people can book | Times that break these rules aren't offered | Next to automate |
 | TC-08 | Blank name, malformed email, very long or non-Latin name | Clear errors, no booking; unusual but valid names still work | Next to automate |
 | TC-09 | Reschedule, then cancel, through the booking's link | The old time is freed and the new one blocked; a cancelled time comes back | Cal.com's own tests |
